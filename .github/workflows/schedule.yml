@@ -1,0 +1,33 @@
+name: Build RHM Feed
+
+on:
+  schedule:
+    - cron: "5 7 * * *"   # Täglich um 07:05 UTC (~09:05 CET)
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run data fetch script
+        run: python fetch_rhm.py
+
+      - name: Commit & push results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/rhm_latest.json data/rhm_prices_last120.csv || true
+          git commit -m "update: RHM feed $(date -u +"%Y-%m-%dT%H:%M:%SZ")" || echo "nothing to commit"
+          git push
